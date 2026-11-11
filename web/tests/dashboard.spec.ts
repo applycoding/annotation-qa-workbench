@@ -6,6 +6,7 @@ const BASE = "/annotation-qa-workbench/";
 const MOTA_B = 2 / 3;
 const IDF1_C = 2 / 3;
 const MEAN_IOU_A = 32619964 / 39538911;
+const GTABC_ALPHA = 457 / 530;
 
 test.describe("dashboard", () => {
   test("honesty strings and title", async ({ page }) => {
@@ -14,7 +15,7 @@ test.describe("dashboard", () => {
     await expect(page.getByTestId("honesty-line").first()).toContainText("Synthetic data only");
     await expect(page.getByText(/does not use real robot images/)).toBeVisible();
     await expect(page.getByTestId("alpha-shift-caveat")).toContainText("Label-level alpha");
-    await expect(page.getByTestId("warehouse-alpha-gtabc")).toBeVisible();
+    await expect(page.getByTestId("warehouse-alpha-gtabc")).toContainText(GTABC_ALPHA.toFixed(6));
   });
 
   test("prev and next frame controls", async ({ page }) => {

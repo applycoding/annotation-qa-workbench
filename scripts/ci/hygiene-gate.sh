@@ -2,6 +2,11 @@
 # SPDX-License-Identifier: Apache-2.0
 set -euo pipefail
 
+if ! command -v file >/dev/null 2>&1; then
+  echo "hygiene gate requires file(1) in PATH" >&2
+  exit 2
+fi
+
 LICENSE_SHA=cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30
 
 probe=$(mktemp)
@@ -123,6 +128,22 @@ print(bytes(int(x,16) for x in line.split()).decode())
     exit 1
   fi
 
+  rc=0
+  env -i HOME="${HOME:-/}" PATH="" /bin/bash -c '
+    set -euo pipefail
+    if command -v file >/dev/null 2>&1; then
+      exit 9
+    fi
+    echo "file command missing" >&2
+    exit 2
+  ' || rc=$?
+  if [[ $rc -eq 9 ]]; then
+    echo "file-missing self test skipped on this runner" >&2
+  elif [[ $rc -ne 2 ]]; then
+    echo "file-missing self test failed (rc=$rc)" >&2
+    exit 1
+  fi
+
   rm -f "$clean" "$allow" "$bad" "$dash_clean" "$dash_bad"
 }
 
@@ -131,6 +152,10 @@ run_self_tests
 mapfile -t files < <(git ls-files)
 for f in "${files[@]}"; do
   [[ -f "$f" ]] || continue
+  if ! command -v file >/dev/null 2>&1; then
+    echo "file command missing during scan" >&2
+    exit 2
+  fi
   file -b "$f" | grep -qi text || continue
   if scan_dashes "$f"; then
     echo "typographic dash in $f" >&2

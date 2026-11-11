@@ -76,7 +76,7 @@ def main() -> None:
 
     bullets = [
         f"- Pytest: **{pytest_count()}** tests collected (`python -m pytest --collect-only -q`).",
-        f"- Vitest: **{vitest_count()}** test (`cd web && npx vitest run`).",
+        f"- Vitest: **{vitest_count()}** tests (`cd web && npx vitest run`).",
         f"- Playwright: **{playwright_count()}** specs (`cd web && npx playwright test --list`).",
         f"- Injected scorer mutants: {mutant_tests} (`iou_over_gt`, `kappa_is_po`, `mota_skip_idsw`, `idf1_match_only`).",
     ]

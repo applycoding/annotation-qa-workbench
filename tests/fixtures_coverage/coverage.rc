@@ -1,0 +1,9 @@
+# Isolated coverage config for the negative gate (does not inherit pyproject source_pkgs).
+[run]
+relative_files = true
+include =
+    tests/fixtures_coverage/undercover.py
+
+[report]
+fail_under = 80
+show_missing = true
