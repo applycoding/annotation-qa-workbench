@@ -49,7 +49,7 @@ cd web && npx playwright test --list
 
 <!-- TEST_INVENTORY_START -->
 - Pytest: **50** tests collected (`python -m pytest --collect-only -q`).
-- Vitest: **17** test (`cd web && npx vitest run`).
+- Vitest: **18** test (`cd web && npx vitest run`).
 - Playwright: **15** specs (`cd web && npx playwright test --list`).
 - Injected scorer mutants: 4 (`iou_over_gt`, `kappa_is_po`, `mota_skip_idsw`, `idf1_match_only`).
 <!-- TEST_INVENTORY_END -->
