@@ -11,13 +11,12 @@ def test_negative_coverage_threshold() -> None:
     data_file = Path("tests/fixtures_coverage/.coverage.negative")
     env = dict(os.environ)
     env["COVERAGE_FILE"] = str(data_file.resolve())
-    env["PYTHONPATH"] = str(Path.cwd())
     proc = subprocess.run(
         [
             sys.executable,
             "-m",
             "pytest",
-            "--cov=tests.fixtures_coverage.undercover",
+            "--cov=undercover_mod",
             "--cov-report=term-missing",
             "--cov-fail-under=80",
             "-q",
