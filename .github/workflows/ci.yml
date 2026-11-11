@@ -54,6 +54,8 @@ jobs:
         run: bash scripts/ci/hygiene-gate.sh
       - name: SHA pin check
         run: bash scripts/ci/sha-pin-check.sh
+      - name: README test inventory
+        run: bash scripts/check_readme_inventory.sh
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: report
