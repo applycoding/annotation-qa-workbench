@@ -91,6 +91,7 @@ jobs:
             [ -f "$f" ] || continue
             sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' "$f"
           done
+          printf '%s\n' 'nameserver 8.8.8.8' 'nameserver 1.1.1.1' | sudo tee /etc/resolv.conf >/dev/null
           npx playwright install --with-deps chromium
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
