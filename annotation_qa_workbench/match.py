@@ -103,14 +103,12 @@ def exhaustive_min_cost(cost_matrix: Sequence[Sequence[float]]) -> list[tuple[in
     for perm in itertools.permutations(cols + extra, size):
         pairs: list[tuple[int, int]] = []
         total = 0.0
-        ok = True
         for r in range(n_rows):
             c = perm[r]
             if c >= n_cols:
                 pairs.append((r, -1))
                 continue
-            val = cost_matrix[r][c]
-            total += val
+            total += float(cost_matrix[r][c])
             pairs.append((r, c))
         real = [(r, c) for r, c in pairs if c >= 0]
         real.sort()
@@ -118,8 +116,6 @@ def exhaustive_min_cost(cost_matrix: Sequence[Sequence[float]]) -> list[tuple[in
         if total < best_cost or (total == best_cost and key < best_pairs):
             best_cost = total
             best_pairs = key
-        if not ok:
-            continue
     return [(r, c, float(cost_matrix[r][c])) for r, c in best_pairs]
 
 

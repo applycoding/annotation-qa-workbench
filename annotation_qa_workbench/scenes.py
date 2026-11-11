@@ -74,6 +74,7 @@ def validate_scene(scene: dict[str, Any]) -> None:
 
 
 def write_scene(path: Path, scene: dict[str, Any]) -> None:
+    validate_scene(scene)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(scene, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
@@ -82,6 +83,7 @@ def load_scene(path: Path) -> dict[str, Any]:
     data: Any = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise TypeError("invalid scene json")
+    validate_scene(data)
     return data
 
 

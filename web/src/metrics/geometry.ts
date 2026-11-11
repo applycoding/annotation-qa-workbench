@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export type Box = { x: number; y: number; w: number; h: number; class: string; track_id: number };
+export type IoUFn = (a: Box, b: Box) => number;
 
 export function boxArea(w: number, h: number): number {
   return w > 0 && h > 0 ? w * h : 0;

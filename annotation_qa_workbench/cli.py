@@ -14,11 +14,12 @@ from annotation_qa_workbench.report import (
     recompute_and_validate,
     write_report,
 )
-from annotation_qa_workbench.scenes import generate_warehouse_v1, write_scene
+from annotation_qa_workbench.scenes import generate_warehouse_v1, validate_scene, write_scene
 
 
 def cmd_generate(out: Path) -> int:
     scene = generate_warehouse_v1()
+    validate_scene(scene)
     write_scene(out / "warehouse_v1.json", scene)
     return 0
 

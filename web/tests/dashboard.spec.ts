@@ -12,8 +12,22 @@ test.describe("dashboard", () => {
     await page.goto(BASE);
     await expect(page).toHaveTitle(/synthetic data/i);
     await expect(page.getByTestId("honesty-line").first()).toContainText("Synthetic data only");
-    await expect(page.getByText("Simulation only")).toBeVisible();
     await expect(page.getByText(/does not use real robot images/)).toBeVisible();
+    await expect(page.getByTestId("alpha-shift-caveat")).toBeVisible();
+  });
+
+  test("prev and next frame controls", async ({ page }) => {
+    await page.goto(BASE);
+    await page.getByTestId("frame-next").click();
+    await expect(page.getByTestId("frame-index")).toHaveText("1");
+    await page.getByTestId("frame-prev").click();
+    await expect(page.getByTestId("frame-index")).toHaveText("0");
+  });
+
+  test("pairwise scores visible", async ({ page }) => {
+    await page.goto(BASE);
+    await expect(page.getByTestId("pairwise-scores")).toBeVisible();
+    await expect(page.getByTestId("pairwise-ab-mota")).not.toContainText("n/a");
   });
 
   test("draw GT robot box on You tab IoU 1", async ({ page }) => {
@@ -57,6 +71,8 @@ test.describe("dashboard", () => {
     await page.goto(BASE);
     await page.getByTestId("tab-You").click();
     await expect(page.getByTestId("score-precision")).toContainText("n/a");
+    await expect(page.getByTestId("score-kappa")).toContainText("n/a");
+    await expect(page.getByTestId("score-motp_mean_iou")).toContainText("n/a");
     await expect(page.getByTestId("score-mota")).toContainText("0.000000");
   });
 
@@ -70,15 +86,15 @@ test.describe("dashboard", () => {
     await page.mouse.down();
     await page.mouse.move(box.x + 80, box.y + 80);
     await page.mouse.up();
-    await page.getByTestId("frame-slider").fill("1");
-    // No boxes on frame 1 for You
-    await page.getByTestId("tab-You").click();
+    await expect(page.getByTestId("canvas-box-count")).toHaveAttribute("data-count", "1");
+    await page.getByTestId("frame-next").click();
+    await expect(page.getByTestId("canvas-box-count")).toHaveAttribute("data-count", "0");
   });
 
   test("locked GT tab does not accept draw", async ({ page }) => {
     await page.goto(BASE);
     await page.getByTestId("tab-GT").click();
-    const before = await page.getByTestId("frame-index").textContent();
+    const before = await page.getByTestId("canvas-box-count").getAttribute("data-count");
     const canvas = page.getByTestId("annotator-canvas");
     const box = await canvas.boundingBox();
     if (!box || before === null) throw new Error("setup");
@@ -86,7 +102,22 @@ test.describe("dashboard", () => {
     await page.mouse.down();
     await page.mouse.move(box.x + 50, box.y + 50);
     await page.mouse.up();
-    await expect(page.getByTestId("frame-index")).toHaveText(before);
+    await expect(page.getByTestId("canvas-box-count")).toHaveAttribute("data-count", before);
+  });
+
+  test("edit resize delete updates scores", async ({ page }) => {
+    await page.goto(BASE);
+    await page.getByTestId("tab-You").click();
+    const canvas = page.getByTestId("annotator-canvas");
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("no canvas");
+    await page.mouse.move(box.x + 20, box.y + 60);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 60, box.y + 100);
+    await page.mouse.up();
+    await page.getByTestId("box-form").locator('input[type="number"]').nth(2).fill("5");
+    await page.getByTestId("delete-box").click();
+    await expect(page.getByTestId("score-mota")).toContainText("0.000000");
   });
 
   test("CI report panel uses JSON", async ({ page }) => {
@@ -94,6 +125,25 @@ test.describe("dashboard", () => {
     await expect(page.getByTestId("ci-report")).toBeVisible();
     const raw = await page.getByTestId("ci-report-b-mota").getAttribute("data-score-raw");
     expect(Number(raw)).toBeCloseTo(MOTA_B, 6);
+  });
+
+  test("missing report error", async ({ page }) => {
+    await page.goto(`${BASE}?reportUrl=${encodeURIComponent("/annotation-qa-workbench/missing-report.json")}`);
+    await expect(page.getByTestId("ci-report-error")).toBeVisible();
+  });
+
+  test("malformed report error", async ({ page }) => {
+    await page.goto(
+      `${BASE}?reportUrl=${encodeURIComponent("/annotation-qa-workbench/test-reports/malformed.json")}`,
+    );
+    await expect(page.getByTestId("ci-report-error")).toBeVisible();
+  });
+
+  test("sample report rejected in production build", async ({ page }) => {
+    await page.goto(
+      `${BASE}?reportUrl=${encodeURIComponent("/annotation-qa-workbench/sample_report.json")}`,
+    );
+    await expect(page.getByTestId("ci-report-error")).toBeVisible();
   });
 
   test("screenshot for docs", async ({ page }) => {

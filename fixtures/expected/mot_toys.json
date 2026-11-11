@@ -1,0 +1,30 @@
+{
+  "id_swap_toy": {
+    "mota": {"rational": [1, 2], "float64": 0.5},
+    "idf1": {"rational": [1, 2], "float64": 0.5},
+    "motp_mean_iou": {"rational": [1, 1], "float64": 1.0},
+    "idsw": 2,
+    "fn": 0,
+    "fp": 0
+  },
+  "idf1_potential_pairs": {
+    "idf1": {"rational": [1, 1], "float64": 1.0},
+    "mota": {"rational": [1, 2], "float64": 0.5},
+    "idtp": 4,
+    "idfn": 0,
+    "idfp": 0
+  },
+  "empty_you_vs_gt": {
+    "mota": {"rational": [0, 1], "float64": 0.0},
+    "idf1": {"rational": [0, 1], "float64": 0.0}
+  },
+  "gt_zero_pred_positive": {
+    "mota": null,
+    "recall": null,
+    "idf1": null
+  },
+  "empty_both": {
+    "mota": {"rational": [1, 1], "float64": 1.0},
+    "idf1": {"rational": [1, 1], "float64": 1.0}
+  }
+}

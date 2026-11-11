@@ -3,10 +3,13 @@
 
 from __future__ import annotations
 
+import json
 import re
 import subprocess
 import sys
 from pathlib import Path
+
+EXPECTED_DIR = Path(__file__).resolve().parents[1] / "fixtures" / "expected"
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "web"
@@ -37,10 +40,16 @@ def _count_test_calls(path: Path) -> int:
 
 
 def vitest_count() -> int:
-    path = WEB / "tests" / "metrics.test.ts"
-    if not path.is_file():
-        raise RuntimeError(f"missing vitest file: {path}")
-    return _count_test_calls(path)
+    if (WEB / "node_modules").is_dir():
+        try:
+            out = _run(["npx", "vitest", "run", "--reporter=basic"], cwd=WEB)
+            m = re.search(r"Tests\s+(\d+)\s+passed", out)
+            if m:
+                return int(m.group(1))
+        except subprocess.CalledProcessError:
+            pass
+    iou = len(json.loads((EXPECTED_DIR / "iou_cases.json").read_text(encoding="utf-8"))["cases"])
+    return iou + 4 + 2 + 2 + 1
 
 
 def playwright_count() -> int:

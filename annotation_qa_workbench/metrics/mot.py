@@ -15,6 +15,7 @@ from annotation_qa_workbench.metrics.kappa import cohen_kappa
 from annotation_qa_workbench.types import track_id
 
 IoUFn = Callable[..., float]
+KappaFn = Callable[[Sequence[str], Sequence[str]], float | None]
 
 
 @dataclass
@@ -75,11 +76,14 @@ def score_sequence(
     pred_frames: list[list[dict[str, object]]],
     thresh: float = IOU_THRESH,
     iou_fn: IoUFn | None = None,
+    kappa_fn: KappaFn | None = None,
     idf1_match_only: bool = False,
     skip_idsw: bool = False,
 ) -> MotScore | str:
     if iou_fn is None:
         iou_fn = iou
+    if kappa_fn is None:
+        kappa_fn = cohen_kappa
 
     gt_count = sum(len(f) for f in gt_frames)
     pred_count = sum(len(f) for f in pred_frames)
@@ -212,7 +216,7 @@ def score_sequence(
         )
         mota_out = mota_val
         idf1_out = idf1
-        kappa = cohen_kappa(matched_label_a, matched_label_b)
+        kappa = kappa_fn(matched_label_a, matched_label_b)
         motp_out = motp_mean_iou
 
     return MotScore(

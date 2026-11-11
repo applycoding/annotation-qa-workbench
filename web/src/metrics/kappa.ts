@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
+export type KappaFn = (a: string[], b: string[]) => number | null;
+
 export function cohenKappa(a: string[], b: string[]): number | null {
   const n = a.length;
   if (n !== b.length || n === 0) return null;

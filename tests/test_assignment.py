@@ -57,15 +57,26 @@ def test_n9_invalid() -> None:
 
 
 def test_identity_cap_33() -> None:
-    frames = [
-        [
-            {"x": 0, "y": 0, "w": 10, "h": 10, "class": "robot", "track_id": i + 1}
-            for i in range(33)
+    frames_gt: list[list[dict]] = []
+    frames_pr: list[list[dict]] = []
+    tid = 1
+    for _ in range(11):
+        frame = [
+            {"x": 0, "y": 0, "w": 10, "h": 10, "class": "robot", "track_id": tid + j}
+            for j in range(3)
         ]
-    ]
-    empty: list[list[dict]] = [[]]
-    out = score_sequence(empty, frames)
-    assert out == "invalid"
+        tid += 3
+        frames_gt.append(frame)
+        frames_pr.append([dict(b) for b in frame])
+    assert score_sequence(frames_gt, frames_pr) == "invalid"
+
+
+def test_hungarian_matches_exhaustive_n6() -> None:
+    ious = [[1.0 if i == j else 0.0 for j in range(6)] for i in range(6)]
+    cost = [[FORBIDDEN_COST if v < 0.5 else 1 - v for v in row] for row in ious]
+    h = {(i, j) for i, j, _ in min_cost_assignment(cost)}
+    e = {(i, j) for i, j, _ in exhaustive_min_cost(cost)}
+    assert h == e
 
 
 def test_fresh_ids_24() -> None:

@@ -3,32 +3,43 @@
 set -euo pipefail
 
 wf=.github/workflows/ci.yml
-good='uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1'
-if ! grep -qF "$good" "$wf"; then
-  echo "missing valid pin" >&2
-  exit 1
-fi
-if grep -E 'uses:[[:space:]]*[^@[:space:]]+@[vV][0-9]' "$wf" >/dev/null; then
-  echo "floating tag found" >&2
-  exit 1
-fi
-if grep -E 'uses:[[:space:]]*[^@[:space:]]+@[0-9a-f]{1,39}[[:space:]]*$' "$wf" >/dev/null; then
-  echo "short sha found" >&2
-  exit 1
-fi
-if grep -E 'uses:[[:space:]]*[^@[:space:]]+$' "$wf" >/dev/null; then
-  echo "unpinned uses" >&2
-  exit 1
-fi
 
-# fixtures
+validate_file() {
+  local file=$1
+  local line
+  while IFS= read -r line; do
+    [[ "$line" =~ uses: ]] || continue
+    if [[ ! "$line" =~ uses:[[:space:]]+[^@[:space:]]+@[0-9a-f]{40}[[:space:]]+# ]]; then
+      echo "invalid pin line: $line" >&2
+      return 1
+    fi
+  done < <(grep -E 'uses:' "$file" || true)
+}
+
+validate_file "$wf"
+
 tmpdir=$(mktemp -d)
-cat >"$tmpdir/bad.yml" <<'YML'
-uses: actions/checkout@v4
-YML
-if ! grep -E 'uses:[[:space:]]*[^@[:space:]]+@[vV][0-9]' "$tmpdir/bad.yml" >/dev/null; then
-  echo "scanner cannot catch bad pin" >&2
-  exit 1
-fi
+write() {
+  printf '%s\n' "$1" >"$tmpdir/$2"
+}
+
+write 'uses: actions/checkout@v4' bad-tag.yml
+write 'uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1' bad-nocomment.yml
+write 'uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1' good.yml
+write 'uses: actions/checkout@abc # v7' short.yml
+write 'uses: actions/checkout' unpinned.yml
+
+expect_fail() {
+  if validate_file "$tmpdir/$1" 2>/dev/null; then
+    echo "expected failure for $1" >&2
+    exit 1
+  fi
+}
+
+expect_fail bad-tag.yml
+expect_fail bad-nocomment.yml
+expect_fail short.yml
+expect_fail unpinned.yml
+validate_file "$tmpdir/good.yml"
 
 exit 0

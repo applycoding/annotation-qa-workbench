@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
-import { type Box, iou } from "./geometry";
+import { type Box, iou, type IoUFn } from "./geometry";
 import { matchBoxes, minCostAssignment } from "./match";
-import { cohenKappa } from "./kappa";
+import { cohenKappa, type KappaFn } from "./kappa";
 
 export type MotScore = {
   fn: number;
@@ -24,11 +24,19 @@ export type MotScore = {
   n_matched: number;
 };
 
+export type ScoreOpts = {
+  iouFn?: IoUFn;
+  kappaFn?: KappaFn;
+  skipIdsw?: boolean;
+  idf1MatchOnly?: boolean;
+};
+
 function countPairs(
   gtFrames: Box[][],
   predFrames: Box[][],
   thresh: number,
   matchOnly: boolean,
+  iouFn: IoUFn,
 ): Map<string, number> {
   const counts = new Map<string, number>();
   const bump = (g: number, p: number) => {
@@ -40,13 +48,13 @@ function countPairs(
     const pred = predFrames[f];
     if (gt.length > 8 || pred.length > 8) throw new Error("invalid");
     if (matchOnly) {
-      for (const [gi, pj] of matchBoxes(gt, pred, thresh).map((t) => [t[0], t[1]] as const)) {
+      for (const [gi, pj] of matchBoxes(gt, pred, thresh, iouFn).map((t) => [t[0], t[1]] as const)) {
         bump(gt[gi].track_id, pred[pj].track_id);
       }
     } else {
       for (let gi = 0; gi < gt.length; gi++) {
         for (let pj = 0; pj < pred.length; pj++) {
-          if (iou(gt[gi], pred[pj]) >= thresh) bump(gt[gi].track_id, pred[pj].track_id);
+          if (iouFn(gt[gi], pred[pj]) >= thresh) bump(gt[gi].track_id, pred[pj].track_id);
         }
       }
     }
@@ -54,7 +62,16 @@ function countPairs(
   return counts;
 }
 
-export function scoreSequence(gtFrames: Box[][], predFrames: Box[][]): MotScore | "invalid" {
+export function scoreSequence(
+  gtFrames: Box[][],
+  predFrames: Box[][],
+  opts: ScoreOpts = {},
+): MotScore | "invalid" {
+  const iouFn = opts.iouFn ?? iou;
+  const kappaFn = opts.kappaFn ?? cohenKappa;
+  const skipIdsw = opts.skipIdsw ?? false;
+  const matchOnly = opts.idf1MatchOnly ?? false;
+
   const gtCount = gtFrames.reduce((s, f) => s + f.length, 0);
   const predCount = predFrames.reduce((s, f) => s + f.length, 0);
   for (const fr of gtFrames) if (fr.length > 8) return "invalid";
@@ -82,6 +99,29 @@ export function scoreSequence(gtFrames: Box[][], predFrames: Box[][]): MotScore 
     };
   }
 
+  if (gtCount === 0 && predCount > 0) {
+    const precision = predCount > 0 ? 0 : null;
+    return {
+      fn: 0,
+      fp: predCount,
+      idsw: 0,
+      gt_count: 0,
+      pred_count: predCount,
+      matches: 0,
+      mota: null,
+      motp_mean_iou: null,
+      idtp: 0,
+      idfn: 0,
+      idfp: predCount,
+      idf1: null,
+      precision,
+      recall: null,
+      f1: null,
+      label_kappa: null,
+      n_matched: 0,
+    };
+  }
+
   let fn = 0;
   let fp = 0;
   let matches = 0;
@@ -92,7 +132,7 @@ export function scoreSequence(gtFrames: Box[][], predFrames: Box[][]): MotScore 
   const last = new Map<number, number>();
 
   for (let f = 0; f < gtFrames.length; f++) {
-    const pairs = matchBoxes(gtFrames[f], predFrames[f]);
+    const pairs = matchBoxes(gtFrames[f], predFrames[f], 0.5, iouFn);
     const mgt = new Set(pairs.map((p) => p[0]));
     const mpr = new Set(pairs.map((p) => p[1]));
     fn += gtFrames[f].length - mgt.size;
@@ -104,14 +144,17 @@ export function scoreSequence(gtFrames: Box[][], predFrames: Box[][]): MotScore 
       lb.push(predFrames[f][pj].class);
       const gid = gtFrames[f][gi].track_id;
       const pid = predFrames[f][pj].track_id;
-      if (last.has(gid) && last.get(gid) !== pid) idsw++;
+      if (!skipIdsw && last.has(gid) && last.get(gid) !== pid) idsw++;
       last.set(gid, pid);
     }
   }
 
+  const motp = matches ? iouSum / matches : null;
+  const motaVal = skipIdsw ? 1 - (fn + fp) / gtCount : 1 - (fn + fp + idsw) / gtCount;
+
   let counts: Map<string, number>;
   try {
-    counts = countPairs(gtFrames, predFrames, 0.5, false);
+    counts = countPairs(gtFrames, predFrames, 0.5, matchOnly, iouFn);
   } catch {
     return "invalid";
   }
@@ -126,19 +169,8 @@ export function scoreSequence(gtFrames: Box[][], predFrames: Box[][]): MotScore 
   const idfp = predCount - idtp;
   const denom = 2 * idtp + idfp + idfn;
   const idf1 = denom ? (2 * idtp) / denom : null;
-  const motp = matches ? iouSum / matches : null;
-  const mota = 1 - (fn + fp + idsw) / gtCount;
 
-  let precision: number | null = predCount ? matches / predCount : null;
-  let recall: number | null = gtCount ? matches / gtCount : null;
-  let f1: number | null =
-    precision !== null && recall !== null && precision + recall
-      ? (2 * precision * recall) / (precision + recall)
-      : null;
   if (predCount === 0 && gtCount > 0) {
-    precision = null;
-    recall = 0;
-    f1 = null;
     return {
       fn,
       fp,
@@ -152,13 +184,20 @@ export function scoreSequence(gtFrames: Box[][], predFrames: Box[][]): MotScore 
       idfn,
       idfp,
       idf1: 0,
-      precision,
-      recall,
-      f1,
+      precision: null,
+      recall: 0,
+      f1: null,
       label_kappa: null,
       n_matched: matches,
     };
   }
+
+  const precision = predCount ? matches / predCount : null;
+  const recall = gtCount ? matches / gtCount : null;
+  const f1 =
+    precision !== null && recall !== null && precision + recall
+      ? (2 * precision * recall) / (precision + recall)
+      : null;
 
   return {
     fn,
@@ -167,7 +206,7 @@ export function scoreSequence(gtFrames: Box[][], predFrames: Box[][]): MotScore 
     gt_count: gtCount,
     pred_count: predCount,
     matches,
-    mota,
+    mota: motaVal,
     motp_mean_iou: motp,
     idtp,
     idfn,
@@ -176,7 +215,7 @@ export function scoreSequence(gtFrames: Box[][], predFrames: Box[][]): MotScore 
     precision,
     recall,
     f1,
-    label_kappa: cohenKappa(la, lb),
+    label_kappa: kappaFn(la, lb),
     n_matched: matches,
   };
 }

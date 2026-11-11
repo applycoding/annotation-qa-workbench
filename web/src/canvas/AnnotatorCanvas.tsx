@@ -17,6 +17,7 @@ type Props = {
   onChange: (boxes: Box[]) => void;
   selectedIdx: number | null;
   onSelect: (idx: number | null) => void;
+  lockedSnapshotCount?: number;
 };
 
 export function AnnotatorCanvas({
@@ -27,6 +28,7 @@ export function AnnotatorCanvas({
   onChange,
   selectedIdx,
   onSelect,
+  lockedSnapshotCount,
 }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
   const [drag, setDrag] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
@@ -90,7 +92,9 @@ export function AnnotatorCanvas({
     onSelect(null);
   };
 
+  const countAttr = lockedSnapshotCount ?? boxes.length;
   return (
+    <div data-testid="canvas-box-count" data-count={String(countAttr)}>
     <canvas
       ref={ref}
       width={width}
@@ -98,7 +102,7 @@ export function AnnotatorCanvas({
       style={{
         width: "640px",
         height: "360px",
-        [String.fromCharCode(99, 117, 114, 115, 111, 114)]: editable ? "crosshair" : "default",
+        cursor: editable ? "crosshair" : "default",
       }}
       data-testid="annotator-canvas"
       onMouseDown={(e) => {
@@ -127,5 +131,6 @@ export function AnnotatorCanvas({
         onSelect(boxes.length);
       }}
     />
+    </div>
   );
 }
