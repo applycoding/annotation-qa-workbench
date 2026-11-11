@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from annotation_qa_workbench.metrics.kappa import cohen_kappa
+
 from .fixtures_loader import load_expected, rational_float
 
 TOL = 1e-12

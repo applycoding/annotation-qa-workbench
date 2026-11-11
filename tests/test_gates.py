@@ -8,6 +8,7 @@ from annotation_qa_workbench.geometry import iou
 from annotation_qa_workbench.match import match_boxes
 from annotation_qa_workbench.metrics.mot import MotScore, score_sequence
 from annotation_qa_workbench.scenes import load_scene, scene_frames
+
 from .fixtures_loader import assert_close, load_expected
 
 TOL = 1e-12
