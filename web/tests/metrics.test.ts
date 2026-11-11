@@ -5,7 +5,9 @@ import { applyAnnotator, type Scene } from "../src/scenes/warehouse";
 import type { Box } from "../src/metrics/geometry";
 import { iou } from "../src/metrics/geometry";
 import { cohenKappa } from "../src/metrics/kappa";
+import { krippendorffAlphaNominal } from "../src/metrics/alpha";
 import { scoreSequence } from "../src/metrics/mot";
+import { computeWarehouseAlphas } from "../src/metrics/warehouseAlphas";
 import { loadExpected, rationalFloat } from "./expectedUtil";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -81,5 +83,46 @@ describe("mot toys", () => {
     if (s === "invalid") return;
     expect(Math.abs((s.mota ?? 0) - rationalFloat(exp.mota))).toBeLessThanOrEqual(TOL);
     expect(Math.abs((s.idf1 ?? 0) - rationalFloat(exp.idf1))).toBeLessThanOrEqual(TOL);
+  });
+
+  it("idf1 potential pairs", () => {
+    type Idf1Scene = Scene & {
+      predictions: { index: number; boxes: Box[] }[];
+    };
+    const sc = JSON.parse(
+      readFileSync(resolve(__dirname, "../../fixtures/scenes/idf1_potential_pairs.json"), "utf8"),
+    ) as Idf1Scene;
+    const gt = sc.frames.map((f) => f.boxes);
+    const pred = sc.predictions.map((f) => f.boxes);
+    const s = scoreSequence(gt, pred);
+    expect(s).not.toBe("invalid");
+    if (s === "invalid") return;
+    const exp = toys.idf1_potential_pairs as Record<string, { rational: [number, number] }>;
+    expect(Math.abs((s.idf1 ?? 0) - rationalFloat(exp.idf1))).toBeLessThanOrEqual(TOL);
+    expect(Math.abs((s.mota ?? 0) - rationalFloat(exp.mota))).toBeLessThanOrEqual(TOL);
+  });
+});
+
+describe("alpha parity", () => {
+  const alphaExp = loadExpected<{
+    ben_gerry: { rational: [number, number] };
+    warehouse: Record<string, { rational: [number, number] }>;
+  }>("alpha.json");
+
+  it("ben gerry", () => {
+    const ben = "aabbdcccedda".split("");
+    const gerry = "babbbccceddd".split("");
+    const mat = ben.map((b, i) => [b, gerry[i]] as [string, string]);
+    const got = krippendorffAlphaNominal(mat);
+    expect(got).not.toBeNull();
+    expect(Math.abs((got ?? 0) - rationalFloat(alphaExp.ben_gerry))).toBeLessThanOrEqual(TOL);
+  });
+
+  it("warehouse alphas", () => {
+    const got = computeWarehouseAlphas(scene);
+    for (const key of ["AC", "AB", "BC", "ABC", "GTABC"] as const) {
+      const exp = alphaExp.warehouse[key];
+      expect(Math.abs((got[key] ?? 0) - rationalFloat(exp))).toBeLessThanOrEqual(TOL);
+    }
   });
 });

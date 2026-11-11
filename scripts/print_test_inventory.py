@@ -49,7 +49,7 @@ def vitest_count() -> int:
         except subprocess.CalledProcessError:
             pass
     iou = len(json.loads((EXPECTED_DIR / "iou_cases.json").read_text(encoding="utf-8"))["cases"])
-    return iou + 4 + 2 + 2 + 1
+    return iou + 4 + 1 + 3 + 2 + 2
 
 
 def playwright_count() -> int:

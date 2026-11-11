@@ -13,4 +13,3 @@ web/test-results/
 *.egg-info/
 .mypy_cache/
 .ruff_cache/
-tests/fixtures_coverage/undercover.py

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AnnotatorCanvas } from "./canvas/AnnotatorCanvas";
 import type { Box } from "./metrics/geometry";
 import { iou } from "./metrics/geometry";
+import { computeWarehouseAlphas } from "./metrics/warehouseAlphas";
 import { scoreSequence } from "./metrics/mot";
 import { CiReportPanel } from "./report/CiReportPanel";
 import { applyAnnotator, loadWarehouse, type Scene } from "./scenes/warehouse";
@@ -79,6 +80,8 @@ export default function App() {
       C: applyAnnotator(scene, "C"),
     };
   }, [scene]);
+
+  const warehouseAlphas = useMemo(() => (scene ? computeWarehouseAlphas(scene) : null), [scene]);
 
   if (!scene || !traces) return <div>Loading scene…</div>;
 
@@ -235,7 +238,10 @@ export default function App() {
       <section data-testid="live-scores">
         <h2>Live scores vs GT ({tab})</h2>
         <p data-testid="alpha-shift-caveat">
-          Label-level kappa does not capture annotator A&apos;s spatial shift; mean IoU does.
+          Label-level alpha does not capture annotator A&apos;s spatial shift; mean IoU does.
+        </p>
+        <p data-testid="warehouse-alpha-gtabc" data-score-raw={warehouseAlphas?.GTABC ?? "n/a"}>
+          Warehouse label-level alpha (GT vs A, B, C): {formatMetric(warehouseAlphas?.GTABC ?? null)}
         </p>
         <p data-testid="live-robot-iou" data-score-raw={frameIou ?? "n/a"}>
           Frame robot IoU: {frameIou === null ? "n/a" : frameIou.toFixed(9)}

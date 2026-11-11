@@ -6,6 +6,16 @@ import sys
 from pathlib import Path
 
 
+def test_undercover_fixture_tracked() -> None:
+    path = Path("tests/fixtures_coverage/undercover.py")
+    assert path.is_file()
+    subprocess.run(
+        ["git", "ls-files", "--error-unmatch", str(path)],
+        check=True,
+        capture_output=True,
+    )
+
+
 def test_negative_coverage_threshold() -> None:
     """Deliberately under-covered module must fail --cov-fail-under=80."""
     data_file = Path("tests/fixtures_coverage/.coverage.negative")
@@ -31,4 +41,8 @@ def test_negative_coverage_threshold() -> None:
     assert proc.returncode == 1
     assert proc.returncode not in (2, 3)
     combined = proc.stdout + proc.stderr
-    assert "fail-under" in combined.lower() or "below" in combined.lower()
+    lowered = combined.lower()
+    assert "filenotfounderror" not in lowered
+    assert "importerror" not in lowered
+    assert "modulenotfounderror" not in lowered
+    assert "fail-under" in lowered or "below" in lowered

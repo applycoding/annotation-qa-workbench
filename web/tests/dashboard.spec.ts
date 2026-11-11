@@ -13,7 +13,8 @@ test.describe("dashboard", () => {
     await expect(page).toHaveTitle(/synthetic data/i);
     await expect(page.getByTestId("honesty-line").first()).toContainText("Synthetic data only");
     await expect(page.getByText(/does not use real robot images/)).toBeVisible();
-    await expect(page.getByTestId("alpha-shift-caveat")).toBeVisible();
+    await expect(page.getByTestId("alpha-shift-caveat")).toContainText("Label-level alpha");
+    await expect(page.getByTestId("warehouse-alpha-gtabc")).toBeVisible();
   });
 
   test("prev and next frame controls", async ({ page }) => {
