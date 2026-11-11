@@ -98,12 +98,16 @@ jobs:
       - name: Playwright Chromium with OS deps
         run: |
           set -euo pipefail
-          for attempt in 1 2 3 4 5; do
-            if sudo apt-get update -qq && npx playwright install --with-deps chromium; then
+          for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            [ -f "$f" ] || continue
+            sudo sed -i 's|http://azure.archive.ubuntu.com|http://archive.ubuntu.com|g' "$f"
+          done
+          for attempt in 1 2 3; do
+            if npx playwright install --with-deps chromium; then
               exit 0
             fi
             echo "playwright deps attempt $attempt failed; retrying..."
-            sleep $((attempt * 15))
+            sleep 20
           done
           exit 1
       - run: npx playwright test
