@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""Print README test inventory bullets from live collection commands."""
+"""Print README test inventory bullets from collectors and source scans."""
 
 from __future__ import annotations
 
@@ -31,20 +31,31 @@ def pytest_count() -> int:
     return int(m.group(1))
 
 
+def _count_test_calls(path: Path) -> int:
+    text = path.read_text(encoding="utf-8")
+    return len(re.findall(r"\b(?:test|it)\s*\(", text))
+
+
 def vitest_count() -> int:
-    out = _run(["npx", "vitest", "run"], cwd=WEB)
-    m = re.search(r"Tests\s+(\d+)\s+passed", out)
-    if not m:
-        raise RuntimeError(f"could not parse vitest output:\n{out}")
-    return int(m.group(1))
+    path = WEB / "tests" / "metrics.test.ts"
+    if not path.is_file():
+        raise RuntimeError(f"missing vitest file: {path}")
+    return _count_test_calls(path)
 
 
 def playwright_count() -> int:
-    out = _run(["npx", "playwright", "test", "--list"], cwd=WEB)
-    m = re.search(r"Total:\s+(\d+)\s+tests?", out)
-    if not m:
-        raise RuntimeError(f"could not parse playwright list:\n{out}")
-    return int(m.group(1))
+    spec = WEB / "tests" / "dashboard.spec.ts"
+    if not spec.is_file():
+        raise RuntimeError(f"missing playwright spec: {spec}")
+    if (WEB / "node_modules").is_dir():
+        try:
+            out = _run(["npx", "playwright", "test", "--list"], cwd=WEB)
+            m = re.search(r"Total:\s+(\d+)\s+tests?", out)
+            if m:
+                return int(m.group(1))
+        except subprocess.CalledProcessError:
+            pass
+    return _count_test_calls(spec)
 
 
 def main() -> None:
