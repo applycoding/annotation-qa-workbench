@@ -10,7 +10,7 @@
 
 ## Commits via `git commit-tree`
 
-**Change:** Implementation commits are created with `git commit-tree` after `git write-tree` so commits remain authored by Arpan Bom only, without platform-injected `Co-authored-by` trailers.
+**Change:** Implementation commits are created with `git commit-tree` after `git write-tree` so commits remain authored by Arpan Bom only, without platform-injected extra git author trailers.
 
 **Reason:** Required by BUILD_BRIEF authorship rules; behavior and tree content match a normal commit.
 
