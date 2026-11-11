@@ -95,7 +95,17 @@ jobs:
       - run: npx vite build --base /annotation-qa-workbench/
       - name: Assert report in dist
         run: test -f dist/report.json
-      - run: npx playwright install --with-deps chromium
+      - name: Playwright Chromium with OS deps
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3 4 5; do
+            if sudo apt-get update -qq && npx playwright install --with-deps chromium; then
+              exit 0
+            fi
+            echo "playwright deps attempt $attempt failed; retrying..."
+            sleep $((attempt * 15))
+          done
+          exit 1
       - run: npx playwright test
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
