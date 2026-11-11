@@ -1,0 +1,15 @@
+__pycache__/
+.venv/
+node_modules/
+dist/
+artifacts/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+web/dist/
+web/playwright-report/
+web/test-results/
+*.egg-info/
+.mypy_cache/
+.ruff_cache/

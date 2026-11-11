@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling==1.33.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "annotation-qa-workbench"
+version = "1.0.0"
+description = "Synthetic annotation QA workbench scoring package"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.12"
+authors = [{ name = "Arpan Bom", email = "applycoding@gmail.com" }]
+dependencies = []
+
+[project.scripts]
+aqw = "annotation_qa_workbench.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["annotation_qa_workbench"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+norecursedirs = ["fixtures_coverage"]
+addopts = "-q"
+
+[tool.coverage.run]
+relative_files = true
+source_pkgs = ["annotation_qa_workbench"]
+omit = ["annotation_qa_workbench/cli.py"]
+
+[tool.coverage.report]
+fail_under = 80
+include = [
+    "*/annotation_qa_workbench/constants.py",
+    "*/annotation_qa_workbench/geometry.py",
+    "*/annotation_qa_workbench/match.py",
+    "*/annotation_qa_workbench/metrics/*",
+    "*/annotation_qa_workbench/scenes.py",
+    "*/annotation_qa_workbench/annotators.py",
+    "*/annotation_qa_workbench/report.py",
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["annotation_qa_workbench"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100

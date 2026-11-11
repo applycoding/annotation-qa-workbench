@@ -1,0 +1,157 @@
+# SPDX-License-Identifier: Apache-2.0
+
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --require-hashes -r requirements.lock
+          python -m pip install --no-build-isolation --no-deps .
+      - name: Regenerate scene diff
+        run: |
+          tmp=$(mktemp -d)
+          aqw generate --out "$tmp"
+          diff -u fixtures/scenes/warehouse_v1.json "$tmp/warehouse_v1.json"
+      - run: ruff check
+      - run: mypy --strict annotation_qa_workbench
+      - name: Pytest with coverage
+        run: |
+          mv annotation_qa_workbench /tmp/annotation_qa_workbench_src
+          pytest --cov=annotation_qa_workbench --cov-fail-under=80
+          mv /tmp/annotation_qa_workbench_src annotation_qa_workbench
+          pytest tests/test_coverage_negative.py -q
+      - name: Write CI report
+        run: |
+          mkdir -p artifacts
+          aqw score --scene fixtures/scenes/warehouse_v1.json --out artifacts/report.json --sha "${{ github.sha }}"
+          aqw report --check artifacts/report.json --require-ci --expect-sha "${{ github.sha }}"
+      - name: Author check
+        run: bash scripts/ci/author-check.sh
+      - name: License bytes
+        run: bash scripts/ci/license-bytes.sh
+      - name: Hygiene grep
+        run: bash scripts/ci/hygiene-gate.sh
+      - name: SHA pin check
+        run: bash scripts/ci/sha-pin-check.sh
+      - name: Third-party notices sync
+        run: bash scripts/ci/third-party-notices-check.sh
+      - name: README test inventory
+        run: bash scripts/check_readme_inventory.sh
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: report
+          path: artifacts/report.json
+          if-no-files-found: error
+
+  web:
+    needs: [core]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Sync third-party notices into web/public
+        run: cp ../THIRD_PARTY_NOTICES.md public/THIRD_PARTY_NOTICES.md
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "26.13.0"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('web/package-lock.json') }}
+      - name: Playwright Chromium with OS deps
+        run: |
+          set -euo pipefail
+          if [ -f /etc/apt/apt-mirrors.txt ]; then
+            sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/apt-mirrors.txt
+          fi
+          for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources; do
+            [ -f "$f" ] || continue
+            sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' "$f"
+          done
+          printf '%s\n' 'nameserver 8.8.8.8' 'nameserver 1.1.1.1' | sudo tee /etc/resolv.conf >/dev/null
+          npx playwright install --with-deps chromium
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: report
+          path: artifacts
+      - name: Validate and copy report
+        run: |
+          node -e "
+          const fs=require('fs');
+          const d=JSON.parse(fs.readFileSync('../artifacts/report.json','utf8'));
+          if(d.sample!==false) process.exit(1);
+          if(d.git_sha!=='${{ github.sha }}') process.exit(1);
+          "
+          cp ../artifacts/report.json public/report.json
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+      - run: npx vite build --base /annotation-qa-workbench/
+      - name: Assert report in dist
+        run: test -f dist/report.json
+      - name: Third-party notices in dist
+        run: cmp -s ../THIRD_PARTY_NOTICES.md dist/THIRD_PARTY_NOTICES.md
+      - run: npx playwright test
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: web-dist
+          path: web/dist
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-screenshot
+          path: web/test-results
+          if-no-files-found: error
+
+  pages:
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [core, web]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: web-dist
+          path: dist
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: dist
+      - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

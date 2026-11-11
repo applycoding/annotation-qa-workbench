@@ -1,0 +1,6 @@
+{
+  "half": {"rational": [1, 2], "float64": 0.5},
+  "zero": {"rational": [0, 1], "float64": 0.0},
+  "one": {"rational": [1, 1], "float64": 1.0},
+  "two_five": {"rational": [2, 5], "float64": 0.4}
+}

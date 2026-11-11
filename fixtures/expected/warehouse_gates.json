@@ -1,0 +1,35 @@
+{
+  "A": {
+    "mota": {"rational": [1, 1], "float64": 1.0},
+    "idf1": {"rational": [1, 1], "float64": 1.0},
+    "label_kappa": {"rational": [1, 1], "float64": 1.0},
+    "motp_mean_iou": {"rational": [32619964, 39538911], "float64": 0.8250091662868511},
+    "per_class_iou": {"robot": [741, 859], "pallet": [58, 67], "cone": [171, 229]}
+  },
+  "B": {
+    "mota": {"rational": [2, 3], "float64": 0.6666666666666666},
+    "idf1": {"rational": [4, 5], "float64": 0.8},
+    "label_kappa": {"rational": [1, 2], "float64": 0.5},
+    "fn": 20,
+    "fp": 0,
+    "precision": {"rational": [1, 1], "float64": 1.0},
+    "recall": {"rational": [2, 3], "float64": 0.6666666666666666},
+    "f1": {"rational": [4, 5], "float64": 0.8}
+  },
+  "C": {
+    "mota": {"rational": [29, 30], "float64": 0.9666666666666667},
+    "idf1": {"rational": [2, 3], "float64": 0.6666666666666666},
+    "label_kappa": {"rational": [1, 1], "float64": 1.0},
+    "idsw": 2,
+    "idtp": 40,
+    "idfn": 20,
+    "idfp": 20
+  },
+  "gt": {
+    "mota": {"rational": [1, 1], "float64": 1.0},
+    "idf1": {"rational": [1, 1], "float64": 1.0},
+    "label_kappa": {"rational": [1, 1], "float64": 1.0},
+    "motp_mean_iou": {"rational": [1, 1], "float64": 1.0},
+    "matches": 60
+  }
+}
