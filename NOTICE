@@ -1,0 +1,7 @@
+annotation-qa-workbench
+Copyright 2026 Arpan Bom
+
+This product is licensed under the Apache License, Version 2.0.
+See the LICENSE file in this repository.
+
+Dependency notices will be filled when the implementation pins land, including every direct runtime and development dependency actually installed, and a THIRD_PARTY_NOTICES file for JavaScript redistributed in the Pages bundle. Idea references are listed in REFERENCES.md.
