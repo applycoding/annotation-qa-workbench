@@ -1,0 +1,15 @@
+{
+  "alphas": {},
+  "constants": {},
+  "git_sha": "0000000000000000000000000000000000000000",
+  "honesty": "Synthetic data only. Simulation only. This file is recorded output; it is not a live model-training run and it does not contain real robot images.",
+  "sample": true,
+  "schema_version": 1,
+  "scene": "warehouse_v1",
+  "scores": {
+    "A": { "mota": 0 },
+    "B": { "mota": 0 },
+    "C": { "mota": 0 },
+    "gt": { "mota": 0 }
+  }
+}
