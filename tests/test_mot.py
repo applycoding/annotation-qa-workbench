@@ -6,7 +6,7 @@ from annotation_qa_workbench.scenes import (
     idf1_potential_pairs_scene,
     scene_frames,
 )
-from tests.fixtures_loader import assert_close, load_expected
+from .fixtures_loader import assert_close, load_expected
 
 TOL = 1e-12
 _TOYS = load_expected("mot_toys.json")

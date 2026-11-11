@@ -5,7 +5,7 @@ from pathlib import Path
 from annotation_qa_workbench.metrics.alpha import krippendorff_alpha_nominal
 from annotation_qa_workbench.report import compute_warehouse_alphas
 from annotation_qa_workbench.scenes import load_scene
-from tests.fixtures_loader import load_expected, rational_float
+from .fixtures_loader import load_expected, rational_float
 
 TOL = 1e-12
 _EXP = load_expected("alpha.json")

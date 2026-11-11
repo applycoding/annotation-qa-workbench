@@ -3,7 +3,7 @@
 import pytest
 
 from annotation_qa_workbench.geometry import iou
-from tests.fixtures_loader import load_expected, rational_float
+from .fixtures_loader import load_expected, rational_float
 
 TOL = 1e-12
 
